@@ -8,6 +8,11 @@ var colors = [];
 var theta = [90, 90, 0];
 
 var thetaLoc;
+var projectionMatrixLoc, modelViewMatrixLoc;
+var projectionMatrix, modelViewMatrix;
+var eye, at, up;
+var inc = 0;
+var cameraPoints = [];
 
 
 window.onload = function init()
@@ -19,7 +24,7 @@ window.onload = function init()
 
     gl.viewport( 0, 0, canvas.width, canvas.height );
     gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
-
+	cameraPath();
     setupData();
 }
 
@@ -74,7 +79,11 @@ function quad(a, b, c, d)
 
     }
 }
-
+function cameraPath(){
+	for (var i = 0; i < 100; i++){ 
+		cameraPoints[i] =  vec3 (i, i, i);
+	}
+}
 function setupData() {
     gl.enable(gl.DEPTH_TEST);
 
@@ -99,19 +108,29 @@ function setupData() {
     var vPosition = gl.getAttribLocation( program, "vPosition" );
     gl.vertexAttribPointer( vPosition, 4, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vPosition );
-
     thetaLoc = gl.getUniformLocation(program, "theta");
-
+	projectionMatrixLoc = gl.getUniformLocation( program, "projectionMatrix" );
+	modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix" );
+	console.log(cameraPoints);
     render();
 }
 
 function render()
 {
+	if (inc > 99){ 
+		inc = 0;
+	}
+	eye = cameraPoints[inc]; 							//Camera center of projection (week 6)
+	at = vec3(0, 0, 0);
+	up = vec3(0, 0, 0);
+	modelViewMatrix = lookAt( eye, at, up );
+	projectionMatrix = ortho(5, -5, 5,-5,5,-5);
+	
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
     gl.uniform3fv(thetaLoc, theta);
-
+	gl.uniformMatrix4fv( projectionMatrixLoc, false, flatten(projectionMatrix) );
+	gl.uniformMatrix4fv( modelViewMatrixLoc, false, flatten(modelViewMatrix) );
     gl.drawArrays( gl.TRIANGLES, 0, numVertices );
-
+	inc++;
     requestAnimFrame( render );
 }
