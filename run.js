@@ -8,6 +8,7 @@ var colors = [];
 var theta = [90, 90, 0];
 
 var thetaLoc;
+var aspect;
 
 
 window.onload = function init()
@@ -18,6 +19,7 @@ window.onload = function init()
     if ( !gl ) { alert( "WebGL isn't available" ); }
 
     gl.viewport( 0, 0, canvas.width, canvas.height );
+    aspect = canvas.width/canvas.height;
     gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
 
     setupData();
@@ -75,6 +77,8 @@ function quad(a, b, c, d)
     }
 }
 
+var projectionMatrixLoc, modelViewMatrixLoc;
+
 function setupData() {
     gl.enable(gl.DEPTH_TEST);
 
@@ -96,6 +100,9 @@ function setupData() {
     gl.bindBuffer( gl.ARRAY_BUFFER, vBuffer );
     gl.bufferData( gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW );
 
+    modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix" );
+    projectionMatrixLoc = gl.getUniformLocation( program, "projectionMatrix" );
+
     var vPosition = gl.getAttribLocation( program, "vPosition" );
     gl.vertexAttribPointer( vPosition, 4, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vPosition );
@@ -105,13 +112,34 @@ function setupData() {
     render();
 }
 
+var modelViewMatrix, projectionMatrix;
+var i=0;
 function render()
 {
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+    //var eye = vec3(0.0, 3.0, 0.0);
+    var eye;
+    if(i <= 0) {
+        eye = vec3(20, 20, 20);
+        i = 20;
+    } else {
+        eye = vec3(0,i,i);
+        i-=0.1;
+    }
+    var at = vec3(0.0, 2.0, 0.0);
+    var up = vec3(0.0, 1.0, 0.0);
+    modelViewMatrix = lookAt( eye, at, up );
+    var scale = 6;
+	// projectionMatrix = ortho(-1.0*scale, 1.0*scale, -1.0*scale, 1.0*scale, -1.0*scale, 1.0*scale);
+	projectionMatrix = perspective(100, aspect, -2, 1);
+
     gl.uniform3fv(thetaLoc, theta);
 
     gl.drawArrays( gl.TRIANGLES, 0, numVertices );
+
+    gl.uniformMatrix4fv( modelViewMatrixLoc, false, flatten(modelViewMatrix) );
+    gl.uniformMatrix4fv( projectionMatrixLoc, false, flatten(projectionMatrix) );
 
     requestAnimFrame( render );
 }

@@ -9,6 +9,9 @@ varying vec4 fColor;
 
 uniform vec3 theta;
 
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+
 void main()
 {
     vec3 angles = radians( theta );
@@ -36,7 +39,7 @@ void main()
                     0.0,  0.0, 0.0, 1.0 );
 
     fColor = vColor; 
-    gl_Position = smatrix * rz * ry * rx * vPosition;
+    gl_Position = projectionMatrix * modelViewMatrix * vPosition;
     gl_Position.z = -gl_Position.z;
 
 }
