@@ -12,6 +12,10 @@ uniform vec3 theta;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 
+attribute vec2 vTexCoord;
+varying vec2 fTexCoord;
+
+
 void main()
 {
     vec3 angles = radians( theta );
@@ -39,6 +43,7 @@ void main()
                     0.0,  0.0, 0.0, 1.0 );
 
     fColor = vColor; 
+    fTexCoord = vTexCoord;
     gl_Position = projectionMatrix * modelViewMatrix * vPosition;
     gl_Position.z = -gl_Position.z;
 
@@ -50,9 +55,12 @@ precision mediump float;
 
 varying vec4 fColor;
 
+varying vec2 fTexCoord;
+uniform sampler2D texture;
+
 void main()
 {
-   gl_FragColor = fColor;
+    gl_FragColor = fColor * texture2D( texture, fTexCoord );
 }
 </script>
 
@@ -66,7 +74,7 @@ void main()
 <canvas id="gl-canvas" width="1024" height="1024">
 Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
-
+<img id = "moonImg" src = "moon.jpg" hidden></img>
 
 </body>
 </html>

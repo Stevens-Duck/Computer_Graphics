@@ -4,12 +4,30 @@ var gl;
 var numVertices = 36;
 var points = [];
 var colors = [];
+var textureCoordsArray = [];
 
 var theta = [90, 90, 0];
 
 var thetaLoc;
 var aspect;
+var program;
 
+
+//Texture
+// var texture1;
+var texture;
+function configureTexture( image ) {
+    texture = gl.createTexture();
+    gl.bindTexture( gl.TEXTURE_2D, texture );
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB, 
+         gl.RGB, gl.UNSIGNED_BYTE, image );
+    gl.generateMipmap( gl.TEXTURE_2D );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, 
+                      gl.NEAREST_MIPMAP_LINEAR );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
+    gl.uniform1i(gl.getUniformLocation(program, "texture"), 0);
+}
 
 window.onload = function init()
 {
@@ -49,14 +67,32 @@ function quad(a, b, c, d)
     ];
 
     var vertexColors = [
-        [ 0.0, 0.0, 0.0, 1.0 ],  // black
-        [ 1.0, 0.0, 0.0, 1.0 ],  // red
-        [ 1.0, 1.0, 0.0, 1.0 ],  // yellow
-        [ 0.0, 1.0, 0.0, 1.0 ],  // green
-        [ 0.0, 0.0, 1.0, 1.0 ],  // blue
-        [ 1.0, 0.0, 1.0, 1.0 ],  // magenta
-        [ 0.0, 1.0, 1.0, 1.0 ],  // cyan
-        [ 1.0, 1.0, 1.0, 1.0 ]   // white
+        // [ 0.0, 0.0, 0.0, 1.0 ],  // black
+        // [ 1.0, 0.0, 0.0, 1.0 ],  // red
+        // [ 1.0, 1.0, 0.0, 1.0 ],  // yellow
+        // [ 0.0, 1.0, 0.0, 1.0 ],  // green
+        // [ 0.0, 0.0, 1.0, 1.0 ],  // blue
+        // [ 1.0, 0.0, 1.0, 1.0 ],  // magenta
+        // [ 0.0, 1.0, 1.0, 1.0 ],  // cyan
+        // [ 1.0, 1.0, 1.0, 1.0 ]   // white
+
+        [ 0.7, 0.7, 0.7, 1.0 ],  // grey
+        [ 0.7, 0.7, 0.7, 1.0 ],  // grey
+        [ 0.7, 0.7, 0.7, 1.0 ],  // grey
+        [ 0.7, 0.7, 0.7, 1.0 ],  // grey
+        [ 0.7, 0.7, 0.7, 1.0 ],  // grey
+        [ 0.7, 0.7, 0.7, 1.0 ],  // grey
+        [ 0.7, 0.7, 0.7, 1.0 ],  // grey
+        [ 0.7, 0.7, 0.7, 1.0 ],  // grey
+
+    ];
+
+    //Texture
+    var textureCoords = [
+        vec2(0, 0),
+        vec2(0, 1),
+        vec2(1, 1),
+        vec2(1, 0)
     ];
 
     // We need to parition the quad into two triangles in order for
@@ -73,8 +109,13 @@ function quad(a, b, c, d)
 
         // for solid colored faces use
         colors.push(vertexColors[a]);
-
     }
+    textureCoordsArray.push(textureCoords[0]);
+    textureCoordsArray.push(textureCoords[1]);
+    textureCoordsArray.push(textureCoords[2]);
+    textureCoordsArray.push(textureCoords[0]);
+    textureCoordsArray.push(textureCoords[2]);
+    textureCoordsArray.push(textureCoords[3]);
 }
 
 var projectionMatrixLoc, modelViewMatrixLoc;
@@ -108,6 +149,20 @@ function setupData() {
     gl.enableVertexAttribArray( vPosition );
 
     thetaLoc = gl.getUniformLocation(program, "theta");
+
+    //Texture
+    var tBuffer = gl.createBuffer();
+    gl.bindBuffer( gl.ARRAY_BUFFER, tBuffer );
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(textureCoordsArray), gl.STATIC_DRAW );
+    var vTexCoord = gl.getAttribLocation( program, "vTexCoord" );
+    gl.vertexAttribPointer( vTexCoord, 2, gl.FLOAT, false, 0, 0 );
+    gl.enableVertexAttribArray( vTexCoord );
+    var image = document.getElementById('moonImg');
+    // texture1 = configureTexture( image );
+    configureTexture( image );
+    // gl.activeTexture( gl.TEXTURE0 );
+    // gl.bindTexture( gl.TEXTURE_2D, texture1 );
+	// gl.uniform1i(gl.getUniformLocation( program, "texture1"), 0);
 
     render();
 }
