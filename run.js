@@ -1,25 +1,58 @@
 var canvas;
 var gl;
+var ext;
 
 var numVertices = 36;
 var points = [];
 var colors = [];
+var textureCoordsArray = [];
 
 var theta = [90, 90, 0];
+var up = vec3(0.0, 1.0, 0.0);
 
 var thetaLoc;
 var aspect;
+var program;
 
+var projectionMatrixLoc, modelViewMatrixLoc;
+var projectionMatrix, modelViewMatrix;
+
+var numInstances = 9;
+var matrixData;
+var matrices = [];
+var byteOffsetToMatrix = 0;
+var numFloatsForView = 0;
+var bytesPerMatrix = 0;
+
+var matrixBuffer;
+var matrixLoc;
+
+//Texture
+// var texture1;
+var texture;
+function configureTexture( image ) {
+    texture = gl.createTexture();
+    gl.bindTexture( gl.TEXTURE_2D, texture );
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image );
+    gl.generateMipmap( gl.TEXTURE_2D );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
+    gl.uniform1i(gl.getUniformLocation(program, "texture"), 0);
+}
 
 window.onload = function init()
 {
     canvas = document.getElementById( "gl-canvas" );
 
     gl = WebGLUtils.setupWebGL( canvas );
-    if ( !gl ) { alert( "WebGL isn't available" ); }
+    if (!gl) { alert( "WebGL isn't available" ); }
+
+    ext = gl.getExtension('ANGLE_instanced_arrays');
+    if (!ext) { alert("ANGLE_instanced_arrays missing"); }
 
     gl.viewport( 0, 0, canvas.width, canvas.height );
-    aspect = canvas.width/canvas.height;
+    aspect = canvas.width / canvas.height;
     gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
 
     setupData();
@@ -58,7 +91,14 @@ function quad(a, b, c, d)
         [ 0.0, 1.0, 1.0, 1.0 ],  // cyan
         [ 1.0, 1.0, 1.0, 1.0 ]   // white
     ];
-
+	
+	 var textureCoords = [
+        vec2(0, 0),
+        vec2(0, 1),
+        vec2(1, 1),
+        vec2(1, 0)
+    ];
+	
     // We need to parition the quad into two triangles in order for
     // WebGL to be able to render it.  In this case, we create two
     // triangles from the quad indices
@@ -73,12 +113,27 @@ function quad(a, b, c, d)
 
         // for solid colored faces use
         colors.push(vertexColors[a]);
+    }
+	textureCoordsArray.push(textureCoords[0]);
+    textureCoordsArray.push(textureCoords[1]);
+    textureCoordsArray.push(textureCoords[2]);
+    textureCoordsArray.push(textureCoords[0]);
+    textureCoordsArray.push(textureCoords[2]);
+    textureCoordsArray.push(textureCoords[3]);
+}
 
+function matrixMake() {
+    matrixData = new Float32Array(numInstances * 16);
+    for (let i = 0; i < numInstances; ++i) {
+        byteOffsetToMatrix = i * 16 * 4;
+        numFloatsForView = 16;
+        matrices.push(new Float32Array(
+            matrixData.buffer,
+            byteOffsetToMatrix,
+            numFloatsForView));
     }
 }
 
-var projectionMatrixLoc, modelViewMatrixLoc;
-var up = vec3(0.0, 1.0, 0.0);
 function setupData() {
     gl.enable(gl.DEPTH_TEST);
 
@@ -87,6 +142,7 @@ function setupData() {
     gl.useProgram( program );
 
     colorCube();
+    matrixMake();
 
     var cBuffer = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, cBuffer );
@@ -100,70 +156,125 @@ function setupData() {
     gl.bindBuffer( gl.ARRAY_BUFFER, vBuffer );
     gl.bufferData( gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW );
 
-    modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix" );
-    projectionMatrixLoc = gl.getUniformLocation( program, "projectionMatrix" );
-
     var vPosition = gl.getAttribLocation( program, "vPosition" );
     gl.vertexAttribPointer( vPosition, 4, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vPosition );
+	
+	//Texture
+    var tBuffer = gl.createBuffer();
+    gl.bindBuffer( gl.ARRAY_BUFFER, tBuffer );
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(textureCoordsArray), gl.STATIC_DRAW );
+    var vTexCoord = gl.getAttribLocation( program, "vTexCoord" );
+    gl.vertexAttribPointer( vTexCoord, 2, gl.FLOAT, false, 0, 0 );
+    gl.enableVertexAttribArray( vTexCoord );
+    var image = document.getElementById('moonImg');
+    // texture1 = configureTexture( image );
+    configureTexture( image );
+    // gl.activeTexture( gl.TEXTURE0 );
+    // gl.bindTexture( gl.TEXTURE_2D, texture1 );
+	// gl.uniform1i(gl.getUniformLocation( program, "texture1"), 0);
+	
+    matrixBuffer = gl.createBuffer();
+    gl.bindBuffer( gl.ARRAY_BUFFER, matrixBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, matrixData.byteLength, gl.DYNAMIC_DRAW );
 
-    thetaLoc = gl.getUniformLocation(program, "theta");
+    matrixLoc = gl.getAttribLocation(program, 'matrix');
+ 
 
-	document.getElementById( "bottomButton" ).onclick = function () {
-		 up = vec3(0.0, 1.0, 0.0);
+    render();
+	
+    document.getElementById( "bottomButton" ).onclick = function () {
+        up = vec3(0.0, 1.0, 0.0);
     };
-	document.getElementById( "bottomRightButton" ).onclick = function () {
-		 up = vec3(1.0, 1.0, 0.0);
+    document.getElementById( "bottomRightButton" ).onclick = function () {
+        up = vec3(1.0, 1.0, 0.0);
     };
-	document.getElementById( "rightButton" ).onclick = function () {
-		 up = vec3(1.0, 0.0, 0.0);
+    document.getElementById( "rightButton" ).onclick = function () {
+        up = vec3(1.0, 0.0, 0.0);
     };
-	document.getElementById( "topRightButton" ).onclick = function () {
-		 up = vec3(1.0, -1.0, 0.0);
+    document.getElementById( "topRightButton" ).onclick = function () {
+        up = vec3(1.0, -1.0, 0.0);
     };
-	document.getElementById( "topButton" ).onclick = function () {
-		 up = vec3(0.0, -1.0, 0.0);
+    document.getElementById( "topButton" ).onclick = function () {
+        up = vec3(0.0, -1.0, 0.0);
     };
-	document.getElementById( "topLeftButton" ).onclick = function () {
-		 up = vec3(-1.0, -1.0, 0.0);
+    document.getElementById( "topLeftButton" ).onclick = function () {
+        up = vec3(-1.0, -1.0, 0.0);
     };
-	document.getElementById( "leftButton" ).onclick = function () {
-		 up = vec3(-1.0, 0.0, 0.0);
+    document.getElementById( "leftButton" ).onclick = function () {
+        up = vec3(-1.0, 0.0, 0.0);
     };
-	document.getElementById( "bottomLeftButton" ).onclick = function () {
-		 up = vec3(-1.0, 1.0, 0.0);
+    document.getElementById( "bottomLeftButton" ).onclick = function () {
+        up = vec3(-1.0, 1.0, 0.0);
     };
+
+    projectionMatrixLoc = gl.getUniformLocation( program, "projectionMatrix" );
+	modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix" );
+
     render();
 }
 
-var modelViewMatrix, projectionMatrix;
-var i=0;
+var i = 0;
+
 function render()
 {
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    //var eye = vec3(0.0, 3.0, 0.0);
+    //var eye = vec3(0, 3, 2);
     var eye;
-    if(i <= 0) {
+    if (i <= 0) {
         eye = vec3(20, 20, 20);
         i = 20;
     } else {
-        eye = vec3(0,i,i);
-        i-=0.1;
+        eye = vec3(0, i, i);
+        i -= 0.025;
     }
     var at = vec3(0.0, 2.0, 0.0);
- 
-    modelViewMatrix = lookAt( eye, at, up );
-    var scale = 6;
-	// projectionMatrix = ortho(-1.0*scale, 1.0*scale, -1.0*scale, 1.0*scale, -1.0*scale, 1.0*scale);
-	projectionMatrix = perspective(100, aspect, -2, 1);
+    modelViewMatrix = lookAt(eye, at, up);
+    projectionMatrix = perspective(100, aspect, -5, 1);
+
+    matrices.forEach((mat, ndx) => {
+        if ( ndx < 1 ) {
+            m4.translation(ndx * 5,  0, 0, mat);
+        }
+        else if ( ndx < 4 ) {
+            m4.translation( 15 + (ndx - 5) * 5,  2.5, 4, mat);
+        }
+        else if ( ndx < 9) {
+            m4.translation( 20 + (ndx - 10) * 5,  5, 8, mat);
+        }
+    });
+   
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, matrixBuffer);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, matrixData);
+
+    bytesPerMatrix = 4 * 16;
+    for (let i = 0; i < 4; ++i) {
+        var loc = matrixLoc + i;
+        gl.enableVertexAttribArray(loc);
+        var offset = i * 16;
+        gl.vertexAttribPointer(
+            loc,
+            4,
+            gl.FLOAT,
+            false,
+            bytesPerMatrix,
+            offset,
+        );
+        ext.vertexAttribDivisorANGLE(loc, 1);
+    }
 
     gl.uniform3fv(thetaLoc, theta);
 
-    gl.drawArrays( gl.TRIANGLES, 0, numVertices );
-
-    gl.uniformMatrix4fv( modelViewMatrixLoc, false, flatten(modelViewMatrix) );
     gl.uniformMatrix4fv( projectionMatrixLoc, false, flatten(projectionMatrix) );
+	gl.uniformMatrix4fv( modelViewMatrixLoc, false, flatten(modelViewMatrix) );
 
-    requestAnimFrame( render );
+    ext.drawArraysInstancedANGLE(
+        gl.TRIANGLES,
+        0,
+        numVertices,
+        numInstances,
+    );
+    requestAnimationFrame(render);
 }

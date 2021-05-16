@@ -4,18 +4,22 @@
 <script id="vertex-shader" type="x-shader/x-vertex">
 attribute vec4 vPosition;
 attribute vec4 vColor;
+attribute mat4 matrix;
 
 varying vec4 fColor;
 
-uniform vec3 theta;
-
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
+uniform vec3 theta;
+
+attribute vec2 vTexCoord;
+varying vec2 fTexCoord;
 
 void main()
 {
     fColor = vColor; 
-    gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+    fTexCoord = vTexCoord;
+	gl_Position = projectionMatrix * modelViewMatrix * matrix * vPosition;
     gl_Position.z = -gl_Position.z;
 
 }
@@ -26,15 +30,19 @@ precision mediump float;
 
 varying vec4 fColor;
 
+varying vec2 fTexCoord;
+uniform sampler2D texture;
+
 void main()
 {
-   gl_FragColor = fColor;
+   gl_FragColor = fColor * texture2D( texture, fTexCoord );
 }
 </script>
 
 <script type="text/javascript" src="../Common/webgl-utils.js"></script>
 <script type="text/javascript" src="../Common/initShaders.js"></script>
 <script type="text/javascript" src="../Common/MV.js"></script>
+<script src="https://webglfundamentals.org/webgl/resources/m4.js"></script>
 <script type="text/javascript" src="run.js"></script>
 
 
@@ -42,15 +50,12 @@ void main()
 <canvas id="gl-canvas" width="1024" height="1024">
 Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
+<img id = "moonImg" src = "moon.jpg" hidden></img>
+
 <br/>
 <button id= "bottomButton">BOTTOM VIEW</button>
-<button id= "bottomRightButton">BOTTOM RIGHT VIEW</button>
 <button id= "rightButton">RIGHT VIEW</button>
-<button id= "topRightButton">TOP RIGHT VIEW</button>
 <button id= "topButton">TOP VIEW</button>
-<button id= "topLeftButton">TOP LEFT VIEW</button>
 <button id= "leftButton">LEFT VIEW</button>
-<button id= "bottomLeftButton">BOTTOM LEFT VIEW</button>
-
 </body>
 </html>
