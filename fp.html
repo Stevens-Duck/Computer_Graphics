@@ -6,39 +6,17 @@ attribute vec4 vPosition;
 attribute vec4 vColor;
 
 varying vec4 fColor;
-uniform mat4 projectionMatrix;
-uniform mat4 modelViewMatrix;
+
 uniform vec3 theta;
+
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
 
 void main()
 {
-    vec3 angles = radians( theta );
-    vec3 c = cos( angles );
-    vec3 s = sin( angles );
-
-    mat4 smatrix = mat4(0.5, 0.0, 0.0, 0.0,
-                        0.0, 0.5, 0.0, 0.0,
-                        0.0, 0.0, 0.5, 0.0,
-                        0.0, 0.0, 0.0, 1.0);
-
-    mat4 rx = mat4( 1.0,  0.0,  0.0, 0.0,
-                    0.0,  c.x,  s.x, 0.0,
-                    0.0, -s.x,  c.x, 0.0,
-                    0.0,  0.0,  0.0, 1.0 );
-            
-    mat4 ry = mat4( c.y, 0.0, -s.y, 0.0,
-                    0.0, 1.0,  0.0, 0.0,
-                    s.y, 0.0,  c.y, 0.0,
-                    0.0, 0.0,  0.0, 1.0 );   
-            
-    mat4 rz = mat4( c.z, s.z, 0.0, 0.0,
-                    -s.z,  c.z, 0.0, 0.0,
-                    0.0,  0.0, 1.0, 0.0,
-                    0.0,  0.0, 0.0, 1.0 );
-
     fColor = vColor; 
-    gl_Position =  vPosition * projectionMatrix * modelViewMatrix;
-    //gl_Position.z = -gl_Position.z;
+    gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+    gl_Position.z = -gl_Position.z;
 
 }
 </script>
@@ -64,7 +42,15 @@ void main()
 <canvas id="gl-canvas" width="1024" height="1024">
 Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
-
+<br/>
+<button id= "bottomButton">BOTTOM VIEW</button>
+<button id= "bottomRightButton">BOTTOM RIGHT VIEW</button>
+<button id= "rightButton">RIGHT VIEW</button>
+<button id= "topRightButton">TOP RIGHT VIEW</button>
+<button id= "topButton">TOP VIEW</button>
+<button id= "topLeftButton">TOP LEFT VIEW</button>
+<button id= "leftButton">LEFT VIEW</button>
+<button id= "bottomLeftButton">BOTTOM LEFT VIEW</button>
 
 </body>
 </html>
