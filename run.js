@@ -5,12 +5,15 @@ var ext;
 var numVertices = 36;
 var points = [];
 var colors = [];
+var textureCoordsArray = [];
+var normalsArray = [];
 
 var theta = [90, 90, 0];
 var up = vec3(0.0, 1.0, 0.0);
 
 var thetaLoc;
 var aspect;
+var program;
 
 var projectionMatrixLoc, modelViewMatrixLoc;
 var projectionMatrix, modelViewMatrix;
@@ -24,6 +27,29 @@ var bytesPerMatrix = 0;
 
 var matrixBuffer;
 var matrixLoc;
+
+var lightPosition = vec4(10.0, 30.0, 50.0, 0.0);
+var lightAmbient = vec4(0.2, 0.2, 0.2, 1.0);
+var lightDiffuse = vec4(1.0, 1.0, 1.0, 1.0);
+var lightSpecular = vec4(1.0, 1.0, 1.0, 1.0);
+var materialAmbient = vec4(1.0, 1.0, 1.0, 1.0);
+var materialDiffuse = vec4(1.0, 1.0, 1.0, 1.0);
+var materialSpecular = vec4(1.0, 1.0, 1.0, 1.0);
+var materialShininess = 100.0;
+
+//Texture
+// var texture1;
+var texture;
+function configureTexture( image ) {
+    texture = gl.createTexture();
+    gl.bindTexture( gl.TEXTURE_2D, texture );
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image );
+    gl.generateMipmap( gl.TEXTURE_2D );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
+    gl.uniform1i(gl.getUniformLocation(program, "texture"), 0);
+}
 
 window.onload = function init()
 {
@@ -42,7 +68,9 @@ window.onload = function init()
     setupData();
 }
 
-function colorCube()
+// Class-example code taken and readjusted for the purpose
+// of our project.
+function rectangle()
 {
     quad( 1, 0, 3, 2 );
     quad( 2, 3, 7, 6 );
@@ -52,6 +80,9 @@ function colorCube()
     quad( 5, 4, 0, 1 );
 }
 
+// Quad function taken from class example
+// and adjusted to fit our final project.
+// Computes texture coords and normals of platforms.
 function quad(a, b, c, d)
 {
     var vertices = [
@@ -75,7 +106,19 @@ function quad(a, b, c, d)
         [ 0.0, 1.0, 1.0, 1.0 ],  // cyan
         [ 1.0, 1.0, 1.0, 1.0 ]   // white
     ];
+	
+	var textureCoords = [
+        vec2(1, 1),
+        vec2(0, 1),
+        vec2(0, 0),
+        vec2(1, 0)
+    ];
 
+    var t1 = subtract(vertices[b], vertices[a]);
+    var t2 = subtract(vertices[c], vertices[a]);
+    var normal = cross(t1, t2);
+    normal = vec3(normal);
+	
     // We need to parition the quad into two triangles in order for
     // WebGL to be able to render it.  In this case, we create two
     // triangles from the quad indices
@@ -90,10 +133,23 @@ function quad(a, b, c, d)
 
         // for solid colored faces use
         colors.push(vertexColors[a]);
-
     }
+	textureCoordsArray.push(textureCoords[0]);
+    textureCoordsArray.push(textureCoords[1]);
+    textureCoordsArray.push(textureCoords[2]);
+    textureCoordsArray.push(textureCoords[0]);
+    textureCoordsArray.push(textureCoords[2]);
+    textureCoordsArray.push(textureCoords[3]);
+    normalsArray.push(normal); 
+    normalsArray.push(normal); 
+    normalsArray.push(normal); 
+    normalsArray.push(normal); 
+    normalsArray.push(normal); 
+    normalsArray.push(normal); 
 }
 
+// Makes a matrix of matrices for later use in creating
+// multiple instances of platforms.
 function matrixMake() {
     matrixData = new Float32Array(numInstances * 16);
     for (let i = 0; i < numInstances; ++i) {
@@ -113,8 +169,17 @@ function setupData() {
     program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
 
-    colorCube();
+    rectangle();
     matrixMake();
+
+    //Normals
+    var nBuffer = gl.createBuffer();
+    gl.bindBuffer( gl.ARRAY_BUFFER, nBuffer);
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(normalsArray), gl.STATIC_DRAW );
+    
+    var vNormal = gl.getAttribLocation( program, "vNormal");
+    gl.vertexAttribPointer( vNormal, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vNormal);
 
     var cBuffer = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, cBuffer );
@@ -131,40 +196,54 @@ function setupData() {
     var vPosition = gl.getAttribLocation( program, "vPosition" );
     gl.vertexAttribPointer( vPosition, 4, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vPosition );
-
+	
+	//Texture
+    var tBuffer = gl.createBuffer();
+    gl.bindBuffer( gl.ARRAY_BUFFER, tBuffer );
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(textureCoordsArray), gl.STATIC_DRAW );
+    var vTexCoord = gl.getAttribLocation( program, "vTexCoord" );
+    gl.vertexAttribPointer( vTexCoord, 2, gl.FLOAT, false, 0, 0 );
+    gl.enableVertexAttribArray( vTexCoord );
+    var image = document.getElementById('moonImg');
+    // texture1 = configureTexture( image );
+    configureTexture( image );
+    // gl.activeTexture( gl.TEXTURE0 );
+    // gl.bindTexture( gl.TEXTURE_2D, texture1 );
+	// gl.uniform1i(gl.getUniformLocation( program, "texture1"), 0);
+	
     matrixBuffer = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, matrixBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, matrixData.byteLength, gl.DYNAMIC_DRAW );
 
     matrixLoc = gl.getAttribLocation(program, 'matrix');
-    
+ 
 
-    thetaLoc = gl.getUniformLocation(program, "theta");
-
+    render();
+	
+    // Button event listeners to change the modelview matrix too correspond
+    // with chosen side
     document.getElementById( "bottomButton" ).onclick = function () {
         up = vec3(0.0, 1.0, 0.0);
-    };
-    document.getElementById( "bottomRightButton" ).onclick = function () {
-        up = vec3(1.0, 1.0, 0.0);
     };
     document.getElementById( "rightButton" ).onclick = function () {
         up = vec3(1.0, 0.0, 0.0);
     };
-    document.getElementById( "topRightButton" ).onclick = function () {
-        up = vec3(1.0, -1.0, 0.0);
-    };
     document.getElementById( "topButton" ).onclick = function () {
         up = vec3(0.0, -1.0, 0.0);
-    };
-    document.getElementById( "topLeftButton" ).onclick = function () {
-        up = vec3(-1.0, -1.0, 0.0);
     };
     document.getElementById( "leftButton" ).onclick = function () {
         up = vec3(-1.0, 0.0, 0.0);
     };
-    document.getElementById( "bottomLeftButton" ).onclick = function () {
-        up = vec3(-1.0, 1.0, 0.0);
-    };
+
+    var ambientProduct = mult(lightAmbient, materialAmbient);
+    var diffuseProduct = mult(lightDiffuse, materialDiffuse);
+    var specularProduct = mult(lightSpecular, materialSpecular);
+
+    gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(ambientProduct));
+    gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(diffuseProduct));
+    gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(specularProduct));
+    gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPosition));
+    gl.uniform1f(gl.getUniformLocation(program, "shininess"), materialShininess);
 
     projectionMatrixLoc = gl.getUniformLocation( program, "projectionMatrix" );
 	modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix" );
@@ -178,32 +257,35 @@ function render()
 {
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    //var eye = vec3(0, 3, 2);
+    // conditions here incremement the modelview matrix
+    // in order to replicate a moving camera that loops back
+    // once it passes over all the platforms
     var eye;
     if (i <= 0) {
         eye = vec3(20, 20, 20);
         i = 20;
     } else {
         eye = vec3(0, i, i);
-        i -= 0.05;
+        i -= 0.01;
     }
     var at = vec3(0.0, 2.0, 0.0);
     modelViewMatrix = lookAt(eye, at, up);
-    projectionMatrix = perspective(100, aspect, -5, 1);
+    projectionMatrix = perspective(90, aspect, -5, 1);
 
+    // For each instance, translates platforms across 
+    // x, y, and z planes in order to stay symmetrical
     matrices.forEach((mat, ndx) => {
-        if ( ndx < 1 ) {
+        if ( ndx < 1 ) {    // for the first instance
             m4.translation(ndx * 5,  0, 0, mat);
         }
-        else if ( ndx < 4 ) {
-            m4.translation( 15 + (ndx - 5) * 5,  2.5, 4, mat);
+        else if ( ndx < 4 ) {   // for the next 3 instances
+            m4.translation( 15 + (ndx - 5) * 5,  2.2, 4, mat); // shifts x by 5 for each index to have them side-by-side
         }
-        else if ( ndx < 9) {
-            m4.translation( 20 + (ndx - 10) * 5,  5, 8, mat);
+        else if ( ndx < 9) {    // for the last 5 instances
+            m4.translation( 20 + (ndx - 10) * 5,  4.4, 8, mat);
         }
     });
    
-
     gl.bindBuffer(gl.ARRAY_BUFFER, matrixBuffer);
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, matrixData);
 
@@ -228,8 +310,17 @@ function render()
     gl.uniformMatrix4fv( projectionMatrixLoc, false, flatten(projectionMatrix) );
 	gl.uniformMatrix4fv( modelViewMatrixLoc, false, flatten(modelViewMatrix) );
 
+    var normalMatrix = [
+        vec3(modelViewMatrix[0][0], modelViewMatrix[0][1], modelViewMatrix[0][2]),
+        vec3(modelViewMatrix[1][0], modelViewMatrix[1][1], modelViewMatrix[1][2]),
+        vec3(modelViewMatrix[2][0], modelViewMatrix[2][1], modelViewMatrix[2][2])
+    ];
+    
+    gl.uniformMatrix3fv(gl.getUniformLocation(program, "normalMatrix"), false, flatten(normalMatrix) );
+
+    // draws all instances
     ext.drawArraysInstancedANGLE(
-        gl.LINE_LOOP,
+        gl.TRIANGLES,
         0,
         numVertices,
         numInstances,
