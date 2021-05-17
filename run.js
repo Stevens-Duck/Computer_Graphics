@@ -30,6 +30,28 @@ var materialShininess = 7.0;
 //Texture
 var texture;
 var value = 3;
+
+var texSize = 256;
+
+// Bump Data
+
+var data = new Array()
+    for (var i = 0; i<= texSize; i++)  data[i] = new Array();
+    for (var i = 0; i<= texSize; i++) for (var j=0; j<=texSize; j++) 
+        data[i][j] = 0.0;
+    for (var i = texSize/4; i<3*texSize/4; i++) for (var j = texSize/4; j<3*texSize/4; j++)
+        data[i][j] = 1.0;
+
+var normalst = new Array()
+    for (var i=0; i<texSize; i++)  normalst[i] = new Array();
+    for (var i=0; i<texSize; i++) for ( var j = 0; j < texSize; j++) 
+        normalst[i][j] = new Array();
+    for (var i=0; i<texSize; i++) for ( var j = 0; j < texSize; j++) {
+        normalst[i][j][0] = data[i][j]-data[i+1][j];
+        normalst[i][j][1] = data[i][j]-data[i][j+1];
+        normalst[i][j][2] = 1;
+    }
+
 function configureTexture( image ) {
     texture = gl.createTexture();
     gl.bindTexture( gl.TEXTURE_2D, texture );
@@ -44,8 +66,10 @@ function configureTexture( image ) {
 window.onload = function init()
 {
     canvas = document.getElementById( "gl-canvas" );
+	resizeCanvas(canvas);
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-    gl = WebGLUtils.setupWebGL( canvas );
+	gl = WebGLUtils.setupWebGL( canvas );
     if (!gl) { alert( "WebGL isn't available" ); }
 
     ext = gl.getExtension('ANGLE_instanced_arrays');
@@ -56,6 +80,13 @@ window.onload = function init()
     gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
 
     setupData();
+}
+
+window.addEventListener("resize", resizeCanvas, false);
+function resizeCanvas(canvas) {
+  var myCanvas = document.getElementById("myCanvas");
+  myCanvas.width = document.documentElement.clientWidth;
+  myCanvas.height = document.documentElement.clientHeight;
 }
 
 window.addEventListener("keydown", function(){
