@@ -12,12 +12,19 @@ uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 uniform vec3 theta;
 
+uniform vec3 lightPosition;
+uniform vec3 eye;
+uniform float shininess;
 attribute vec2 vTexCoord;
 varying vec2 fTexCoord;
 
 void main()
 {
-    fColor = vColor; 
+    vec3 L = normalize( lightPosition.xyz);
+	vec3 E = normalize(eye.xyz);
+	vec3 H = normalize( L + E );
+	vec4 ambient =  vec4(0.09,0.09,0.09,1);
+	fColor = vColor; 
     fTexCoord = vTexCoord;
 	gl_Position = projectionMatrix * modelViewMatrix * matrix * vPosition;
     gl_Position.z = -gl_Position.z;
@@ -47,7 +54,7 @@ void main()
 
 
 <body>
-<canvas id="gl-canvas" width="1024" height="1024">
+<canvas id="gl-canvas" width="512" height="512">
 Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
 <img id = "moonImg" src = "moon.jpg" hidden></img>

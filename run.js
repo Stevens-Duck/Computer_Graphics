@@ -7,10 +7,8 @@ var points = [];
 var colors = [];
 var textureCoordsArray = [];
 
-var theta = [90, 90, 0];
 var up = vec3(0.0, 1.0, 0.0);
 
-var thetaLoc;
 var aspect;
 var program;
 
@@ -26,7 +24,9 @@ var bytesPerMatrix = 0;
 
 var matrixBuffer;
 var matrixLoc;
-
+//Lighting
+var lightPosition = vec3(0.0, 4.6, 0.0 );
+var materialShininess = 7.0;
 //Texture
 var texture;
 var value = 3;
@@ -265,8 +265,11 @@ function render()
         ext.vertexAttribDivisorANGLE(loc, 1);
     }
 
-    gl.uniform3fv(thetaLoc, theta);
-
+	//Lighting
+	gl.uniform3fv( gl.getUniformLocation(program, "lightPosition"),flatten(lightPosition) );
+	gl.uniform3fv( gl.getUniformLocation(program, "eye"),flatten(lightPosition) );
+	gl.uniform1f( gl.getUniformLocation(program, "shininess"),materialShininess );
+	
     gl.uniformMatrix4fv( projectionMatrixLoc, false, flatten(projectionMatrix) );
 	gl.uniformMatrix4fv( modelViewMatrixLoc, false, flatten(modelViewMatrix) );
 
