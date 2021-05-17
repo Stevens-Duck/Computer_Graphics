@@ -63,27 +63,11 @@ function configureTexture( image ) {
     gl.uniform1i(gl.getUniformLocation(program, "texture"), 0);
 }
 
-function resizeCanvasToDisplaySize(canvas) {
-  // Lookup the size the browser is displaying the canvas in CSS pixels.
-  const displayWidth  = canvas.clientWidth;
-  const displayHeight = canvas.clientHeight;
- 
-  // Check if the canvas is not the same size.
-  const needResize = canvas.width  !== displayWidth ||
-                     canvas.height !== displayHeight;
- 
-  if (needResize) {
-    // Make the canvas the same size
-    canvas.width  = displayWidth;
-    canvas.height = displayHeight;
-  }
- 
-  return needResize;
-}
-
 window.onload = function init()
 {
     canvas = document.getElementById( "gl-canvas" );
+	canvas.width = document.documentElement.clientWidth;
+	canvas.height = document.documentElement.clientHeight;
     gl = WebGLUtils.setupWebGL( canvas );
     if (!gl) { alert( "WebGL isn't available" ); }
 
@@ -99,7 +83,7 @@ window.onload = function init()
 
 window.addEventListener("resize", resizeCanvas, false);
 function resizeCanvas(canvas) {
-  var myCanvas = document.getElementById("myCanvas");
+  var myCanvas = document.getElementById("gl-canvas");
   myCanvas.width = document.documentElement.clientWidth;
   myCanvas.height = document.documentElement.clientHeight;
 }
@@ -230,11 +214,7 @@ function setupData() {
     gl.vertexAttribPointer( vTexCoord, 2, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vTexCoord );
     var image = document.getElementById('moonImg');
-    // texture1 = configureTexture( image );
     configureTexture( image );
-    // gl.activeTexture( gl.TEXTURE0 );
-    // gl.bindTexture( gl.TEXTURE_2D, texture1 );
-	// gl.uniform1i(gl.getUniformLocation( program, "texture1"), 0);
 	
     matrixBuffer = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, matrixBuffer);
