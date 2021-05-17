@@ -28,8 +28,8 @@ var matrixBuffer;
 var matrixLoc;
 
 //Texture
-// var texture1;
 var texture;
+var value = 3;
 function configureTexture( image ) {
     texture = gl.createTexture();
     gl.bindTexture( gl.TEXTURE_2D, texture );
@@ -58,6 +58,22 @@ window.onload = function init()
     setupData();
 }
 
+window.addEventListener("keydown", function(){
+	switch(event.keyCode) {
+		case 38:  // up arrow key
+			up = vec3(0.0, -1.0, 0.0);
+			break;
+		case 40:  // down arrow key
+			up = vec3(0.0, 1.0, 0.0);
+			break;
+		case 37: // left arrow key
+			up = vec3(-1.0, 0.0, 0.0);
+			break;
+		case 39: // right arrow key
+			up = vec3(1.0, 0.0, 0.0);
+			break;
+	}
+}, true);
 function colorCube()
 {
     quad( 1, 0, 3, 2 );
@@ -93,9 +109,9 @@ function quad(a, b, c, d)
     ];
 	
 	 var textureCoords = [
-        vec2(0, 0),
-        vec2(0, 1),
         vec2(1, 1),
+        vec2(0, 1),
+        vec2(0, 0),
         vec2(1, 0)
     ];
 	
@@ -179,35 +195,19 @@ function setupData() {
     gl.bufferData(gl.ARRAY_BUFFER, matrixData.byteLength, gl.DYNAMIC_DRAW );
 
     matrixLoc = gl.getAttribLocation(program, 'matrix');
- 
-
-    render();
-	
+ 	
     document.getElementById( "bottomButton" ).onclick = function () {
-        up = vec3(0.0, 1.0, 0.0);
-    };
-    document.getElementById( "bottomRightButton" ).onclick = function () {
-        up = vec3(1.0, 1.0, 0.0);
+		up = vec3(0.0, 1.0, 0.0);
     };
     document.getElementById( "rightButton" ).onclick = function () {
         up = vec3(1.0, 0.0, 0.0);
     };
-    document.getElementById( "topRightButton" ).onclick = function () {
-        up = vec3(1.0, -1.0, 0.0);
-    };
     document.getElementById( "topButton" ).onclick = function () {
         up = vec3(0.0, -1.0, 0.0);
-    };
-    document.getElementById( "topLeftButton" ).onclick = function () {
-        up = vec3(-1.0, -1.0, 0.0);
     };
     document.getElementById( "leftButton" ).onclick = function () {
         up = vec3(-1.0, 0.0, 0.0);
     };
-    document.getElementById( "bottomLeftButton" ).onclick = function () {
-        up = vec3(-1.0, 1.0, 0.0);
-    };
-
     projectionMatrixLoc = gl.getUniformLocation( program, "projectionMatrix" );
 	modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix" );
 
@@ -227,7 +227,7 @@ function render()
         i = 20;
     } else {
         eye = vec3(0, i, i);
-        i -= 0.025;
+        i -= 0.05;
     }
     var at = vec3(0.0, 2.0, 0.0);
     modelViewMatrix = lookAt(eye, at, up);
