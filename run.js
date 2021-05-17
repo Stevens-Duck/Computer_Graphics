@@ -63,13 +63,28 @@ function configureTexture( image ) {
     gl.uniform1i(gl.getUniformLocation(program, "texture"), 0);
 }
 
+function resizeCanvasToDisplaySize(canvas) {
+  // Lookup the size the browser is displaying the canvas in CSS pixels.
+  const displayWidth  = canvas.clientWidth;
+  const displayHeight = canvas.clientHeight;
+ 
+  // Check if the canvas is not the same size.
+  const needResize = canvas.width  !== displayWidth ||
+                     canvas.height !== displayHeight;
+ 
+  if (needResize) {
+    // Make the canvas the same size
+    canvas.width  = displayWidth;
+    canvas.height = displayHeight;
+  }
+ 
+  return needResize;
+}
+
 window.onload = function init()
 {
     canvas = document.getElementById( "gl-canvas" );
-	resizeCanvas(canvas);
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
-	gl = WebGLUtils.setupWebGL( canvas );
+    gl = WebGLUtils.setupWebGL( canvas );
     if (!gl) { alert( "WebGL isn't available" ); }
 
     ext = gl.getExtension('ANGLE_instanced_arrays');
