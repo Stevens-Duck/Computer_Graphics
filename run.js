@@ -40,6 +40,14 @@ var materialShininess = 100.0;
 //Texture
 // var texture1;
 var texture;
+
+window.addEventListener("resize", resizeCanvas, false);
+function resizeCanvas(canvas) {
+  var myCanvas = document.getElementById("gl-canvas");
+  myCanvas.width = document.documentElement.clientWidth;
+  myCanvas.height = document.documentElement.clientHeight;
+}
+
 function configureTexture( image ) {
     texture = gl.createTexture();
     gl.bindTexture( gl.TEXTURE_2D, texture );
